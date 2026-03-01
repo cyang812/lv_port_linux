@@ -1,15 +1,38 @@
-# Usage:
-# cmake -DCMAKE_TOOLCHAIN_FILE=./user_cross_compile_setup.cmake -B build -S .
-# make  -C build -j
+# Cross-compilation for STM32MP135F-DK (OpenSTLinux SDK)
+# SDK environment must be sourced before running cmake:
+#   source /opt/st/stm32mp1/sdk/environment-setup-cortexa7t2hf-neon-vfpv4-ostl-linux-gnueabi
 
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 
-set(tools /home/ubuntu/Your_SDK/prebuilt/rootfsbuilt/arm/toolchain-glibc-gcc/toolchain)
-set(CMAKE_C_COMPILER ${tools}/bin/arm-openwrt-linux-gnueabi-gcc)
-set(CMAKE_CXX_COMPILER ${tools}/bin/arm-openwrt-linux-gnueabi-g++)
+# The SDK sets CC="arm-ostl-linux-gnueabi-gcc <flags>" (compiler + flags in one var).
+# CMake needs them split: CMAKE_C_COMPILER = executable only, flags go into CMAKE_C_FLAGS.
+# Same for CXX.
 
-# If necessary, set STAGING_DIR
-# if not work, please try(in shell command): export STAGING_DIR=/home/ubuntu/Your_SDK/out/xxx/openwrt/staging_dir/target
-#set(ENV{STAGING_DIR} "/home/ubuntu/Your_SDK/out/xxx/openwrt/staging_dir/target")
+# --- Split CC into compiler and flags ---
+separate_arguments(_CC_LIST UNIX_COMMAND "$ENV{CC}")
+list(GET _CC_LIST 0 _CC_COMPILER)
+list(REMOVE_AT _CC_LIST 0)
+string(REPLACE ";" " " _CC_FLAGS "${_CC_LIST}")
 
+separate_arguments(_CXX_LIST UNIX_COMMAND "$ENV{CXX}")
+list(GET _CXX_LIST 0 _CXX_COMPILER)
+list(REMOVE_AT _CXX_LIST 0)
+string(REPLACE ";" " " _CXX_FLAGS "${_CXX_LIST}")
+
+set(CMAKE_C_COMPILER   ${_CC_COMPILER})
+set(CMAKE_CXX_COMPILER ${_CXX_COMPILER})
+set(CMAKE_C_FLAGS_INIT   "${_CC_FLAGS}")
+set(CMAKE_CXX_FLAGS_INIT "${_CXX_FLAGS}")
+
+set(CMAKE_SYSROOT $ENV{SDKTARGETSYSROOT})
+
+set(CMAKE_FIND_ROOT_PATH $ENV{SDKTARGETSYSROOT})
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# pkg-config must look inside sysroot
+set(ENV{PKG_CONFIG_PATH}        "$ENV{SDKTARGETSYSROOT}/usr/lib/pkgconfig:$ENV{SDKTARGETSYSROOT}/usr/share/pkgconfig")
+set(ENV{PKG_CONFIG_SYSROOT_DIR} "$ENV{SDKTARGETSYSROOT}")
