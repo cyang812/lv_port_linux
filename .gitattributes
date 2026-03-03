@@ -1,0 +1,10 @@
+# Auto-detect text files and normalize line endings to LF in the repo.
+* text=auto
+
+# Force LF for build/config files (cross-compiled for ARM Linux)
+*.sh       text eol=lf
+*.cmake    text eol=lf
+*.defaults text eol=lf
+*.c        text eol=lf
+*.h        text eol=lf
+*.py       text eol=lf
